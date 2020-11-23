@@ -22,13 +22,16 @@ class KITTIDataset(MonoDataset):
         super(KITTIDataset, self).__init__(*args, **kwargs)
 
         # NOTE: Make sure your intrinsics matrix is *normalized* by the original image size    
-        self.K = np.array([[0.58, 0, 0.5, 0],
-                           [0, 1.92, 0.5, 0],
+        # self.K = np.array([[0.58, 0, 0.5, 0],
+        #                    [0, 1.92, 0.5, 0],
+        #                    [0, 0, 1, 0],
+        #                    [0, 0, 0, 1]], dtype=np.float32)
+        self.K = np.array([[0.56, 0, 0.49, 0],
+                           [0, 2.09, 0.85, 0],
                            [0, 0, 1, 0],
                            [0, 0, 0, 1]], dtype=np.float32)
-
-        self.full_res_shape = (1242, 375)
-        self.side_map = {"2": 2, "3": 3, "l": 2, "r": 3}
+        self.full_res_shape = (1408, 376)
+        self.side_map = {"0": 0, "1": 1, "l": 0, "r": 1}
 
     def check_depth(self):
         line = self.filenames[0].split()
@@ -60,7 +63,7 @@ class KITTIRAWDataset(KITTIDataset):
     def get_image_path(self, folder, frame_index, side):
         f_str = "{:010d}{}".format(frame_index, self.img_ext)
         image_path = os.path.join(
-            self.data_path, folder, "image_0{}/data".format(self.side_map[side]), f_str)
+            self.data_path, folder, "image_0{}/data_rect".format(self.side_map[side]), f_str)
         return image_path
 
     def get_depth(self, folder, frame_index, side, do_flip):

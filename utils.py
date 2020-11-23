@@ -9,7 +9,8 @@ import os
 import hashlib
 import zipfile
 from six.moves import urllib
-
+import random
+import numpy as np
 
 def readlines(filename):
     """Read all the lines in a text file and return as a list
@@ -112,3 +113,67 @@ def download_model_if_doesnt_exist(model_name):
             f.extractall(model_path)
 
         print("   Model unzipped to {}".format(model_path))
+
+def split_dataset(dataset, path, side, max_idx, min_idx=0, split_ratio=0.8):
+
+    idxs = np.arange(min_idx, max_idx)
+    random.shuffle(idxs)
+    train_max_idx = int(max_idx * split_ratio)
+    train_idxs = idxs[0:train_max_idx]
+    test_idxs = idxs[train_max_idx:max_idx]
+
+    with open('splits/'+ dataset +'/train_files.txt', 'a') as train_file:
+        for idx in train_idxs:
+            train_file.write('{} {} {}\n'.format(path, str(idx), side))
+
+    with open('splits/'+ dataset +'/val_files.txt', 'a') as test_file:
+        for idx in test_idxs:
+            test_file.write('{} {} {}\n'.format(path, str(idx), side))
+
+def get_files_list(dirName, excludeList): 
+ 
+    listOfFile = os.listdir(dirName) 
+    allFiles = list() 
+    for entry in listOfFile: 
+        fullPath = os.path.join(dirName, entry) 
+        if any(substring in fullPath for substring in excludeList):
+            continue
+        if os.path.isdir(fullPath):
+            allFiles = allFiles + get_files_list(fullPath, excludeList) 
+        else:
+            # fullPath = fullPath.replace("/RGB", "")
+            allFiles.append(fullPath) 
+    return allFiles
+
+def kitti_split_dataset(dataset, path, side='l', split_ratio=0.8):
+    exclude_list = ["velodyne_points", "timestamps.txt"]
+    files_list = get_files_list(path, exclude_list)
+    max_idx = len(files_list)
+    print("Total files: ", max_idx)
+    idxs = np.arange(1, max_idx)
+    random.shuffle(idxs)
+    train_max_idx = int(max_idx * split_ratio)
+    train_idxs = idxs[0:train_max_idx]
+    test_idxs = idxs[train_max_idx:max_idx]
+    for phase, idxs in zip( ["train", "val"], [train_idxs, test_idxs] ):
+        print(phase)
+        with open('splits/'+ dataset +'/'+ phase +'_files.txt', 'w+') as split_file:
+            for idx in idxs:
+                cur_file = files_list[idx]
+                base = os.path.basename(cur_file) 
+                dir_path = os.path.dirname(cur_file)
+                total_files = len( os.listdir(dir_path) )
+
+                dir_path = dir_path.replace(path, ".")
+                if "image_01" in dir_path:
+                    side = 'r'
+                    dir_path = dir_path.replace("image_01/data_rect", "")
+                else:
+                    side = 'l'
+                    dir_path = dir_path.replace("image_00/data_rect", "")
+                 
+                frame_num = int(os.path.splitext(base)[0])
+
+                if frame_num == 0 or (frame_num) == (total_files)-1:
+                    continue
+                split_file.write('{} {} {}\n'.format(dir_path, (frame_num), side))

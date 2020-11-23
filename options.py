@@ -20,7 +20,7 @@ class MonodepthOptions:
         self.parser.add_argument("--data_path",
                                  type=str,
                                  help="path to the training data",
-                                 default=os.path.join(file_dir, "kitti_data"))
+                                 default=os.path.join(file_dir, "KITTI_dataset"))
         self.parser.add_argument("--log_dir",
                                  type=str,
                                  help="log directory",
@@ -34,7 +34,7 @@ class MonodepthOptions:
         self.parser.add_argument("--split",
                                  type=str,
                                  help="which training split to use",
-                                 choices=["eigen_zhou", "eigen_full", "odom", "benchmark"],
+                                 choices=["eigen_zhou", "eigen_full", "odom", "benchmark", "kitti"],
                                  default="eigen_zhou")
         self.parser.add_argument("--num_layers",
                                  type=int,
