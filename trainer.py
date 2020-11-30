@@ -25,6 +25,10 @@ import datasets
 import networks
 from IPython import embed
 
+import matplotlib as mpl
+import matplotlib.cm as cm
+import PIL.Image as pil
+
 
 class Trainer:
     def __init__(self, options):
@@ -199,7 +203,14 @@ class Trainer:
         self.set_train()
 
         for batch_idx, inputs in enumerate(self.train_loader):
-
+            
+            # img = inputs[("color_aug", 0, 0)][0]
+            # depth = inputs['depth_gt'][0,0] 
+            # plt.subplot(2,1,1)
+            # plt.imshow(img.permute(1, 2, 0))
+            # plt.subplot(2,1,2)
+            # plt.imshow(depth)
+            # plt.show()
             before_op_time = time.time()
 
             outputs, losses = self.process_batch(inputs)
@@ -503,16 +514,16 @@ class Trainer:
         """
         depth_pred = outputs[("depth", 0, 0)]
         depth_pred = torch.clamp(F.interpolate(
-            depth_pred, [375, 1242], mode="bilinear", align_corners=False), 1e-3, 80)
+            depth_pred, [376, 1408], mode="bilinear", align_corners=False), 1e-3, 80)
         depth_pred = depth_pred.detach()
 
         depth_gt = inputs["depth_gt"]
         mask = depth_gt > 0
 
         # garg/eigen crop
-        crop_mask = torch.zeros_like(mask)
-        crop_mask[:, :, 153:371, 44:1197] = 1
-        mask = mask * crop_mask
+        # crop_mask = torch.zeros_like(mask)
+        # crop_mask[:, :, 153:371, 44:1197] = 1
+        # mask = mask * crop_mask
 
         depth_gt = depth_gt[mask]
         depth_pred = depth_pred[mask]

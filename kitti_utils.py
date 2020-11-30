@@ -59,7 +59,7 @@ def generate_depth_map(calib_dir, velo_filename, cam=0, vel_depth=False):
 
     # compute projection matrix velodyne->image plane
     R_cam2rect = np.eye(4)
-    R_cam2rect[:3, :3] = cam2cam['R_rect_00'].reshape(3, 3)
+    R_cam2rect[:3, :3] = cam2cam['R_rect_01'].reshape(3, 3)
     P_rect = cam2cam['P_rect_0'+str(cam)].reshape(3, 4)
     P_velo2im = np.dot(np.dot(P_rect, R_cam2rect), velo2cam)
     # P_velo2im = np.dot(P_rect, velo2cam)
@@ -80,8 +80,8 @@ def generate_depth_map(calib_dir, velo_filename, cam=0, vel_depth=False):
 
     # check if in bounds
     # use minus 1 to get the exact same value as KITTI matlab code
-    velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0]) - 1
-    velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1]) - 1
+    velo_pts_im[:, 0] = np.round(velo_pts_im[:, 0]) #- 1
+    velo_pts_im[:, 1] = np.round(velo_pts_im[:, 1]) #- 1
     val_inds = (velo_pts_im[:, 0] >= 0) & (velo_pts_im[:, 1] >= 0)
     val_inds = val_inds & (velo_pts_im[:, 0] < im_shape[1]) & (velo_pts_im[:, 1] < im_shape[0])
     velo_pts_im = velo_pts_im[val_inds, :]
