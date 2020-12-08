@@ -513,11 +513,12 @@ class Trainer:
         so is only used to give an indication of validation performance
         """
         depth_pred = outputs[("depth", 0, 0)]
-        depth_pred = torch.clamp(F.interpolate(
-            depth_pred, [376, 1408], mode="bilinear", align_corners=False), 1e-3, 80)
+        # depth_pred = torch.clamp(F.interpolate(
+        #     depth_pred, [376, 1408], mode="bilinear", align_corners=False), 1e-3, 80)
         depth_pred = depth_pred.detach()
 
         depth_gt = inputs["depth_gt"]
+        # print(depth_gt.shape, depth_pred.shape)
         mask = depth_gt > 0
 
         # garg/eigen crop

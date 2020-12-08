@@ -30,7 +30,9 @@ class KITTIDataset(MonoDataset):
                            [0, 2.09, 0.85, 0],
                            [0, 0, 1, 0],
                            [0, 0, 0, 1]], dtype=np.float32)
-        self.full_res_shape = (1408, 376)
+        # self.full_res_shape = (1408, 376)
+        self.full_res_shape = (704, 192)
+
         self.side_map = {"0": 0, "1": 1, "l": 0, "r": 1}
 
     def check_depth(self):

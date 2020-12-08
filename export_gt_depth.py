@@ -28,7 +28,7 @@ def export_gt_depths_kitti():
                         type=str,
                         help='which split to export gt from',
                         required=True,
-                        choices=["eigen", "eigen_benchmark"])
+                        choices=["eigen", "eigen_benchmark", "kitti"])
     opt = parser.parse_args()
 
     split_folder = os.path.join(os.path.dirname(__file__), "splits", opt.split)
@@ -39,18 +39,25 @@ def export_gt_depths_kitti():
     gt_depths = []
     for line in lines:
 
-        folder, frame_id, _ = line.split()
+        folder, frame_id, side = line.split()
         frame_id = int(frame_id)
-
+        sides = {"l":0, "r":1}
         if opt.split == "eigen":
             calib_dir = os.path.join(opt.data_path, folder.split("/")[0])
             velo_filename = os.path.join(opt.data_path, folder,
-                                         "velodyne_points/data", "{:010d}.bin".format(frame_id))
+                       "velodyne_points/data", "{:010d}.bin".format(frame_id))
             gt_depth = generate_depth_map(calib_dir, velo_filename, 2, True)
         elif opt.split == "eigen_benchmark":
             gt_depth_path = os.path.join(opt.data_path, folder, "proj_depth",
                                          "groundtruth", "image_02", "{:010d}.png".format(frame_id))
             gt_depth = np.array(pil.open(gt_depth_path)).astype(np.float32) / 256
+        elif opt.split == "kitti":
+            calib_dir = os.path.join(opt.data_path, 'calibration')
+            velo_filename = os.path.join(opt.data_path, folder,
+                       "velodyne_points/data", "{:010d}.bin".format(frame_id))
+            gt_depth_path = os.path.join(opt.data_path, folder,
+                                         "velodyne_points/data", "{:010d}.bin".format(frame_id))
+            gt_depth = generate_depth_map(calib_dir, velo_filename, sides[side], True)
 
         gt_depths.append(gt_depth.astype(np.float32))
 

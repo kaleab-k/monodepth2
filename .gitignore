@@ -5,4 +5,4 @@ __pycache__
 *.npz
 kitti_data
 models
-KITTI_dataset
+KITTI_dataset/2013_05_28_drive_0000_sync/
