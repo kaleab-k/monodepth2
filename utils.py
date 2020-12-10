@@ -147,7 +147,11 @@ def get_files_list(dirName, excludeList):
     return allFiles
 
 def kitti_split_dataset(dataset, path, side='l', split_ratio=0.8):
+<<<<<<< HEAD
     exclude_list = ["velodyne_points", "timestamps", "calibration", "data_poses", "calib_cam_to_cam", "KITTI-360", "calib_cam_to_cam", "calib_cam_to_velo", "data_2d_semantics", "download_2d_perspective", "download_3d_velodyne", "perspective"]
+=======
+    exclude_list = ["velodyne_points", "timestamps.txt", "calibration", "data_poses", "calib_cam_to_cam", "instance"]
+>>>>>>> 2ab368d1fa218199817643353c709814d7603ca3
     files_list = get_files_list(path, exclude_list)
     max_idx = len(files_list)
     print("Total files: ", max_idx)

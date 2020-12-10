@@ -17,11 +17,15 @@ import torch.utils.data as data
 from torchvision import transforms
 
 
-def pil_loader(path):
+def pil_loader(path, segmentation=False):
     # open path as file to avoid ResourceWarning
     # (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, 'rb') as f:
         with Image.open(f) as img:
+            if segmentation:
+                img.load()
+                img.split()
+                return img #.convert('LA')
             return img.convert('RGB')
 
 
@@ -46,7 +50,8 @@ class MonoDataset(data.Dataset):
                  frame_idxs,
                  num_scales,
                  is_train=False,
-                 img_ext='.png'):
+                 img_ext='.png',
+                 segmentation=False):
         super(MonoDataset, self).__init__()
 
         self.data_path = data_path
@@ -60,6 +65,7 @@ class MonoDataset(data.Dataset):
 
         self.is_train = is_train
         self.img_ext = img_ext
+        self.segmentation = segmentation
 
         self.loader = pil_loader
         self.to_tensor = transforms.ToTensor()
@@ -100,14 +106,16 @@ class MonoDataset(data.Dataset):
                 n, im, i = k
                 for i in range(self.num_scales):
                     inputs[(n, im, i)] = self.resize[i](inputs[(n, im, i - 1)])
-
+            if "segmentation" == k:
+                inputs["segmentation"] = self.resize[0](inputs["segmentation"])
         for k in list(inputs):
             f = inputs[k]
             if "color" in k:
                 n, im, i = k
                 inputs[(n, im, i)] = self.to_tensor(f)
                 inputs[(n + "_aug", im, i)] = self.to_tensor(color_aug(f))
-
+            if "segmentation" == k:
+                inputs["segmentation"] = self.to_tensor(inputs["segmentation"]).float()
     def __len__(self):
         return len(self.filenames)
 
@@ -159,6 +167,9 @@ class MonoDataset(data.Dataset):
                 inputs[("color", i, -1)] = self.get_color(folder, frame_index, other_side, do_flip)
             else:
                 inputs[("color", i, -1)] = self.get_color(folder, frame_index + i, side, do_flip)
+        
+        # if self.segmentation:
+        inputs['segmentation'] = self.get_segmentation(folder, frame_index, side, do_flip)
 
         # adjusting intrinsics to match each scale in the pyramid
         for scale in range(self.num_scales):
@@ -201,7 +212,8 @@ class MonoDataset(data.Dataset):
 
     def get_color(self, folder, frame_index, side, do_flip):
         raise NotImplementedError
-
+    def get_segmentation(self, folder, frame_index, side, do_flip):
+        raise NotImplementedError
     def check_depth(self):
         raise NotImplementedError
 

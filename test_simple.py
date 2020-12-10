@@ -66,6 +66,7 @@ def test_simple(args):
     print("-> Loading model from ", model_path)
     encoder_path = os.path.join(model_path, "encoder.pth")
     depth_decoder_path = os.path.join(model_path, "depth.pth")
+    seg_decoder_path = os.path.join(model_path, "segmentation.pth")
 
     # LOADING PRETRAINED MODEL
     print("   Loading pretrained encoder")
@@ -89,6 +90,16 @@ def test_simple(args):
 
     depth_decoder.to(device)
     depth_decoder.eval()
+
+    print("   Loading pretrained segmentation")
+    seg_decoder = networks.SegmentationDecoder(
+        num_ch_enc=encoder.num_ch_enc, scales=range(4))
+
+    loaded_dict = torch.load(seg_decoder_path, map_location=device)
+    seg_decoder.load_state_dict(loaded_dict)
+
+    seg_decoder.to(device)
+    seg_decoder.eval()
 
     # FINDING INPUT IMAGES
     if os.path.isfile(args.image_path):
@@ -122,11 +133,15 @@ def test_simple(args):
             input_image = input_image.to(device)
             features = encoder(input_image)
             outputs = depth_decoder(features)
-
+            seg_output = seg_decoder(features)
+            # print(seg_output)
             disp = outputs[("disp", 0)]
             disp_resized = torch.nn.functional.interpolate(
                 disp, (original_height, original_width), mode="bilinear", align_corners=False)
 
+            seg_resized = torch.nn.functional.interpolate(
+                seg_output, (original_height, original_width), mode="bilinear", align_corners=False)
+            # print(seg_resized.shape, disp_resized.shape)
             # Saving numpy file
             output_name = os.path.splitext(os.path.basename(image_path))[0]
             name_dest_npy = os.path.join(output_directory, "{}_disp.npy".format(output_name))
@@ -143,6 +158,12 @@ def test_simple(args):
 
             name_dest_im = os.path.join(output_directory, "{}_disp.jpeg".format(output_name))
             im.save(name_dest_im)
+
+            # Saving segmentation result
+            seg_img = pil.fromarray( (seg_resized.squeeze().cpu().numpy() * 255).astype(np.uint8))
+
+            name_dest_im_seg = os.path.join(output_directory, "{}_seg.jpeg".format(output_name))
+            seg_img.save(name_dest_im_seg)
 
             print("   Processed {:d} of {:d} images - saved prediction to {}".format(
                 idx + 1, len(paths), name_dest_im))

@@ -203,6 +203,11 @@ class MonodepthOptions:
                                       "from the original monodepth paper",
                                  action="store_true")
 
+        # Segmentation option
+        self.parser.add_argument("--segmentation",
+                                 help="if set will perform instance segmentation ",
+                                 action="store_true")
+
     def parse(self):
         self.options = self.parser.parse_args()
         return self.options
