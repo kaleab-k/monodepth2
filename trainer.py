@@ -65,6 +65,11 @@ class Trainer:
         self.models["depth"].to(self.device)
         self.parameters_to_train += list(self.models["depth"].parameters())
 
+        self.models["segmentation"] = networks.SegmentationDecoder(
+            self.models["encoder"].num_ch_enc, self.opt.scales, num_output_channels=3)
+        self.models["segmentation"].to(self.device)
+        self.parameters_to_train += list(self.models["segmentation"].parameters())
+
         if self.use_pose_net:
             if self.opt.pose_model_type == "separate_resnet":
                 self.models["pose_encoder"] = networks.ResnetEncoder(
@@ -130,13 +135,13 @@ class Trainer:
 
         train_dataset = self.dataset(
             self.opt.data_path, train_filenames, self.opt.height, self.opt.width,
-            self.opt.frame_ids, 4, is_train=True, img_ext=img_ext)
+            self.opt.frame_ids, 4, is_train=True, img_ext=img_ext, segmentation=self.opt.segmentation)
         self.train_loader = DataLoader(
             train_dataset, self.opt.batch_size, True,
             num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)
         val_dataset = self.dataset(
             self.opt.data_path, val_filenames, self.opt.height, self.opt.width,
-            self.opt.frame_ids, 4, is_train=False, img_ext=img_ext)
+            self.opt.frame_ids, 4, is_train=False, img_ext=img_ext, segmentation=self.opt.segmentation)
         self.val_loader = DataLoader(
             val_dataset, self.opt.batch_size, True,
             num_workers=self.opt.num_workers, pin_memory=True, drop_last=True)
@@ -265,6 +270,9 @@ class Trainer:
         if self.use_pose_net:
             outputs.update(self.predict_poses(inputs, features))
 
+        if self.opt.segmentation:
+            outputs["segmentation"] = self.models["segmentation"](features)
+        
         self.generate_images_pred(inputs, outputs)
         losses = self.compute_losses(inputs, outputs)
 
@@ -420,11 +428,16 @@ class Trainer:
         """
         losses = {}
         total_loss = 0
+        
+        if self.opt.segmentation:
+            segment = outputs["segmentation"]
+            segment_target = inputs["segmentation"]
+            # print(segment.shape, segment_target.shape)
 
         for scale in self.opt.scales:
             loss = 0
             reprojection_losses = []
-
+            seg_reprojection_loss = None
             if self.opt.v1_multiscale:
                 source_scale = scale
             else:
@@ -439,7 +452,7 @@ class Trainer:
                 reprojection_losses.append(self.compute_reprojection_loss(pred, target))
 
             reprojection_losses = torch.cat(reprojection_losses, 1)
-
+            
             if not self.opt.disable_automasking:
                 identity_reprojection_losses = []
                 for frame_id in self.opt.frame_ids[1:]:
@@ -478,7 +491,6 @@ class Trainer:
                 # add random numbers to break ties
                 identity_reprojection_loss += torch.randn(
                     identity_reprojection_loss.shape).cuda() * 0.00001
-
                 combined = torch.cat((identity_reprojection_loss, reprojection_loss), dim=1)
             else:
                 combined = reprojection_loss
@@ -499,10 +511,16 @@ class Trainer:
             smooth_loss = get_smooth_loss(norm_disp, color)
 
             loss += self.opt.disparity_smoothness * smooth_loss / (2 ** scale)
+
             total_loss += loss
             losses["loss/{}".format(scale)] = loss
 
+        
         total_loss /= self.num_scales
+        if self.opt.segmentation:
+            seg_reprojection_loss = (self.compute_reprojection_loss(segment, segment_target))
+            total_loss += seg_reprojection_loss.mean()
+
         losses["loss"] = total_loss
         return losses
 
@@ -555,8 +573,10 @@ class Trainer:
         writer = self.writers[mode]
         for l, v in losses.items():
             writer.add_scalar("{}".format(l), v, self.step)
-
+        
         for j in range(min(4, self.opt.batch_size)):  # write a maxmimum of four images
+            writer.add_image("seg_input", (inputs["segmentation"][j]), self.step)
+            writer.add_image("seg_pred", (outputs["segmentation"][j]), self.step)
             for s in self.opt.scales:
                 for frame_id in self.opt.frame_ids:
                     writer.add_image(

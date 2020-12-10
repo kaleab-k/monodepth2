@@ -146,7 +146,7 @@ def get_files_list(dirName, excludeList):
     return allFiles
 
 def kitti_split_dataset(dataset, path, side='l', split_ratio=0.8):
-    exclude_list = ["velodyne_points", "timestamps.txt", "calibration", "data_poses", "calib_cam_to_cam"]
+    exclude_list = ["velodyne_points", "timestamps.txt", "calibration", "data_poses", "calib_cam_to_cam", "instance"]
     files_list = get_files_list(path, exclude_list)
     max_idx = len(files_list)
     print("Total files: ", max_idx)

@@ -54,7 +54,15 @@ class KITTIDataset(MonoDataset):
             color = color.transpose(pil.FLIP_LEFT_RIGHT)
 
         return color
+    def get_segmentation(self, folder, frame_index, side, do_flip):
+        img_path = self.get_image_path(folder, frame_index, side)
+        img_path = img_path.replace('data_rect', 'instance')
+        seg = self.loader(img_path)
 
+        if do_flip:
+            seg = seg.transpose(pil.FLIP_LEFT_RIGHT)
+
+        return seg
 
 class KITTIRAWDataset(KITTIDataset):
     """KITTI dataset which loads the original velodyne depth maps for ground truth
