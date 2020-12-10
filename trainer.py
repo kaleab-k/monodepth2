@@ -432,7 +432,7 @@ class Trainer:
         if self.opt.segmentation:
             segment = outputs["segmentation"]
             segment_target = inputs["segmentation"]
-            # print(segment.shape, segment_target.shape)
+            print(segment.shape, segment_target.shape)
 
         for scale in self.opt.scales:
             loss = 0

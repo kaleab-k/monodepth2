@@ -93,7 +93,7 @@ def test_simple(args):
 
     print("   Loading pretrained segmentation")
     seg_decoder = networks.SegmentationDecoder(
-        num_ch_enc=encoder.num_ch_enc, scales=range(4), num_output_channels=3)
+        num_ch_enc=encoder.num_ch_enc, scales=range(4))
 
     loaded_dict = torch.load(seg_decoder_path, map_location=device)
     seg_decoder.load_state_dict(loaded_dict)
@@ -160,7 +160,7 @@ def test_simple(args):
             im.save(name_dest_im)
 
             # Saving segmentation result
-            seg_img = pil.fromarray( (seg_resized.squeeze().permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8))
+            seg_img = pil.fromarray( (seg_resized.squeeze().cpu().numpy() * 255).astype(np.uint8))
 
             name_dest_im_seg = os.path.join(output_directory, "{}_seg.jpeg".format(output_name))
             seg_img.save(name_dest_im_seg)
