@@ -38,14 +38,16 @@ def export_gt_depths_kitti():
 
     gt_depths = []
     for line in lines:
-
         folder, frame_id, side = line.split()
+        print(f"Folder: {folder.split('/')[0]} FrameID: {frame_id}")
         frame_id = int(frame_id)
         sides = {"l":0, "r":1}
+        # print(opt.data_path)
         if opt.split == "eigen":
             calib_dir = os.path.join(opt.data_path, folder.split("/")[0])
             velo_filename = os.path.join(opt.data_path, folder,
                        "velodyne_points/data", "{:010d}.bin".format(frame_id))
+            print(f"velo_filename: {velo_filename}")
             gt_depth = generate_depth_map(calib_dir, velo_filename, 2, True)
         elif opt.split == "eigen_benchmark":
             gt_depth_path = os.path.join(opt.data_path, folder, "proj_depth",

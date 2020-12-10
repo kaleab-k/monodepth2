@@ -28,6 +28,7 @@ from IPython import embed
 import matplotlib as mpl
 import matplotlib.cm as cm
 import PIL.Image as pil
+pil.LOAD_TRUNCATED_IMAGES = True
 
 
 class Trainer:
@@ -443,7 +444,7 @@ class Trainer:
             if not self.opt.disable_automasking:
                 identity_reprojection_losses = []
                 for frame_id in self.opt.frame_ids[1:]:
-                    pred = inputs[("color", frame_id, source_scale)]
+                    pred = inputs[("color", frame_id, source_scale)] # prediction projected from frame_id
                     identity_reprojection_losses.append(
                         self.compute_reprojection_loss(pred, target))
 

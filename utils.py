@@ -11,6 +11,7 @@ import zipfile
 from six.moves import urllib
 import random
 import numpy as np
+from PIL import Image
 
 def readlines(filename):
     """Read all the lines in a text file and return as a list
@@ -146,7 +147,7 @@ def get_files_list(dirName, excludeList):
     return allFiles
 
 def kitti_split_dataset(dataset, path, side='l', split_ratio=0.8):
-    exclude_list = ["velodyne_points", "timestamps.txt", "calibration", "data_poses", "calib_cam_to_cam"]
+    exclude_list = ["velodyne_points", "timestamps", "calibration", "data_poses", "calib_cam_to_cam", "KITTI-360", "calib_cam_to_cam", "calib_cam_to_velo", "data_2d_semantics", "download_2d_perspective", "download_3d_velodyne", "perspective"]
     files_list = get_files_list(path, exclude_list)
     max_idx = len(files_list)
     print("Total files: ", max_idx)
@@ -155,25 +156,67 @@ def kitti_split_dataset(dataset, path, side='l', split_ratio=0.8):
     train_max_idx = int(max_idx * split_ratio)
     train_idxs = idxs[0:train_max_idx]
     test_idxs = idxs[train_max_idx:max_idx]
+    
+    # Lookup table with num files in folders to speed up computation
+    numFileLookup = dict()
+    
     for phase, idxs in zip( ["train", "val"], [train_idxs, test_idxs] ):
         print(phase)
+        counter = 0
+        writeStr = ""
         with open('splits/'+ dataset +'/'+ phase +'_files.txt', 'w+') as split_file:
             for idx in idxs:
+                counter += 1
+                if counter % 1000 == 0:
+                    print(counter)
                 cur_file = files_list[idx]
                 base = os.path.basename(cur_file) 
                 dir_path = os.path.dirname(cur_file)
-                total_files = len( os.listdir(dir_path) )
+                
+                first = 0
+                last = 0
+                if dir_path in numFileLookup.keys():
+                    first = numFileLookup[dir_path]['firstImgNum']
+                    last = numFileLookup[dir_path]['lastImgNum']
+                else:
+                    files = os.listdir(dir_path)
+                    imgNums = np.array([int(os.path.splitext(text)[0]) for text in files])
+                    first = np.min(imgNums)
+                    last = np.max(imgNums)
+                    print(f"First: {first}, Last:{last}")
+                    entry = dict()
+                    entry['firstImgNum'], entry['lastImgNum'] = first, last
+                    numFileLookup[dir_path] = entry
 
                 dir_path = dir_path.replace(path, ".")
                 if "image_01" in dir_path:
                     side = 'r'
-                    dir_path = dir_path.replace("image_01/data_rect", "")
+                    dir_path = dir_path.replace("image_01/data_rect", "", 1)
                 else:
                     side = 'l'
-                    dir_path = dir_path.replace("image_00/data_rect", "")
+                    dir_path = dir_path.replace("image_00/data_rect", "", 1)
                  
                 frame_num = int(os.path.splitext(base)[0])
 
-                if frame_num == 0 or (frame_num) == (total_files)-1:
+                if frame_num <= first or frame_num >= last:
                     continue
-                split_file.write('{} {} {}\n'.format(dir_path, (frame_num), side))
+                writeStr += '{} {} {}\n'.format(dir_path, (frame_num), side)
+                    
+            split_file.write(writeStr)
+            
+            
+            
+def discover_corrupted_image(folder):
+    exclude_list = ["velodyne_points", "timestamps", "calibration", "data_poses", "calib_cam_to_cam",       "KITTI-360", "calib_cam_to_cam", "calib_cam_to_velo", "data_2d_semantics", "download_2d_perspective", "download_3d_velodyne", "perspective"]
+    fileNames = get_files_list(folder, exclude_list)
+    print(f"Files Detected: {len(fileNames)}")
+    counter = 0
+    for fname in fileNames:
+        counter += 1
+        if counter % 1000 == 0:
+            print(counter)
+        try:
+            im = Image.open(fname)
+            im2 = im.convert('RGB')
+        except OSError:
+            print(f"Cannot load: {fname}")
