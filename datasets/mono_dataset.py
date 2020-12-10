@@ -23,7 +23,9 @@ def pil_loader(path, segmentation=False):
     with open(path, 'rb') as f:
         with Image.open(f) as img:
             if segmentation:
-                return img.convert('LA')
+                img.load()
+                img.split()
+                return img #.convert('LA')
             return img.convert('RGB')
 
 
@@ -113,7 +115,7 @@ class MonoDataset(data.Dataset):
                 inputs[(n, im, i)] = self.to_tensor(f)
                 inputs[(n + "_aug", im, i)] = self.to_tensor(color_aug(f))
             if "segmentation" == k:
-                inputs["segmentation"] = self.to_tensor(inputs["segmentation"])
+                inputs["segmentation"] = self.to_tensor(inputs["segmentation"]).float()
     def __len__(self):
         return len(self.filenames)
 
