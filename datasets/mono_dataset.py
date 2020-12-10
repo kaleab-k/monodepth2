@@ -17,11 +17,13 @@ import torch.utils.data as data
 from torchvision import transforms
 
 
-def pil_loader(path):
+def pil_loader(path, segmentation=False):
     # open path as file to avoid ResourceWarning
     # (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, 'rb') as f:
         with Image.open(f) as img:
+            if segmentation:
+                return img.convert('LA')
             return img.convert('RGB')
 
 

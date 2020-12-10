@@ -57,7 +57,7 @@ class KITTIDataset(MonoDataset):
     def get_segmentation(self, folder, frame_index, side, do_flip):
         img_path = self.get_image_path(folder, frame_index, side)
         img_path = img_path.replace('data_rect', 'instance')
-        seg = self.loader(img_path)
+        seg = self.loader(img_path, segmentation=True)
 
         if do_flip:
             seg = seg.transpose(pil.FLIP_LEFT_RIGHT)

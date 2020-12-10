@@ -66,7 +66,7 @@ class Trainer:
         self.parameters_to_train += list(self.models["depth"].parameters())
 
         self.models["segmentation"] = networks.SegmentationDecoder(
-            self.models["encoder"].num_ch_enc, self.opt.scales, num_output_channels=3)
+            self.models["encoder"].num_ch_enc, self.opt.scales)
         self.models["segmentation"].to(self.device)
         self.parameters_to_train += list(self.models["segmentation"].parameters())
 
