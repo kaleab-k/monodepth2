@@ -168,9 +168,10 @@ class MonoDataset(data.Dataset):
             else:
                 inputs[("color", i, -1)] = self.get_color(folder, frame_index + i, side, do_flip)
         
-        # if self.segmentation:
+        
         inputs['segmentation'] = self.get_segmentation(folder, frame_index, side, do_flip)
-
+        
+        
         # adjusting intrinsics to match each scale in the pyramid
         for scale in range(self.num_scales):
             K = self.K.copy()
@@ -207,6 +208,9 @@ class MonoDataset(data.Dataset):
             stereo_T[0, 3] = side_sign * baseline_sign * 0.1
 
             inputs["stereo_T"] = torch.from_numpy(stereo_T)
+            
+        inputs['segmentation'] /= 1000
+        inputs['segmentation'] = (inputs['segmentation']).int() / 255
 
         return inputs
 

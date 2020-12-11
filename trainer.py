@@ -28,7 +28,7 @@ from IPython import embed
 import matplotlib as mpl
 import matplotlib.cm as cm
 import PIL.Image as pil
-pil.LOAD_TRUNCATED_IMAGES = True
+import cv2
 
 
 class Trainer:
@@ -176,6 +176,8 @@ class Trainer:
             len(train_dataset), len(val_dataset)))
 
         self.save_opts()
+        
+        # _, (self.ax1, self.ax2) = plt.subplots(2, 1)
 
     def set_train(self):
         """Convert all models to training mode
@@ -272,7 +274,7 @@ class Trainer:
             outputs.update(self.predict_poses(inputs, features))
 
         if self.opt.segmentation:
-            outputs["segmentation"] = self.models["segmentation"](features)
+            outputs["segmentation"] = self.models["segmentation"](features) # the model shares the same encoder
         
         self.generate_images_pred(inputs, outputs)
         losses = self.compute_losses(inputs, outputs)
@@ -519,6 +521,16 @@ class Trainer:
         
         total_loss /= self.num_scales
         if self.opt.segmentation:
+            segOutput = segment.cpu()
+            segOutput = segOutput[0].permute(1, 2, 0).detach().clone().numpy()
+            segTarget = segment_target.cpu()
+            segTarget = segTarget[0].permute(1, 2, 0).detach().clone().numpy()
+            # print(f"SegTarget Mean: {segTarget.mean()}, SegOutput Mean: {segOutput.mean()}")
+            segShow = cv2.vconcat((segOutput, segTarget))
+
+            cv2.imshow("Visualization", segShow)
+            cv2.waitKey(1)
+            # input("Press enter to continue...")
             seg_reprojection_loss = (self.compute_reprojection_loss(segment, segment_target))
             total_loss += seg_reprojection_loss.mean()
 
